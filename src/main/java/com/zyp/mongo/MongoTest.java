@@ -13,10 +13,12 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
+import com.mongodb.client.model.Field;
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Updates.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import static com.mongodb.client.model.Projections.*;
 
 /**
  * @author zyp
@@ -55,7 +57,7 @@ public class MongoTest
     @Test
     public void getDocumentByFilter(){
     	//查询过滤器，查询指定的文档对象只查询一条
-        Document document = collection.find(Filters.eq("name","zhangsan")).first();
+        Document document = collection.find(eq("name","zhangsan")).first();
         System.out.println(document.toJson());
     }
     @Test
@@ -66,10 +68,10 @@ public class MongoTest
                 System.out.println(document.toJson());
             }
        };
-       collection.find(Filters.gt("i", 90)).forEach(printBlock);
+       collection.find(gt("i", 90)).forEach(printBlock);
        
        System.out.println("-----------下面是查询符合多个条件的文档对象---------");
-       collection.find(Filters.and(Filters.gt("i", 50),Filters.lt("i", 60))).forEach(printBlock);
+       collection.find(and(gt("i", 50),lt("i", 60))).forEach(printBlock);
        
     }
     
@@ -102,30 +104,50 @@ public class MongoTest
     @Test
     public void updateOne(){
     	//更新一条符合条件的文档对象
-    	collection.updateOne(Filters.eq("i", 10), new Document("$set", new Document("i",110)));
+    	collection.updateOne(eq("i", 10), new Document("$set", new Document("i",110)));
     }
     
     
     @Test
     public void updateMulti(){
     	//更新多条文档对象
-    	UpdateResult updateResult = collection.updateMany(Filters.gt("i", 95), Updates.inc("i", 100));
+    	UpdateResult updateResult = collection.updateMany(gt("i", 95), inc("i", 100));
     	System.out.println(updateResult.getModifiedCount());
     }
     
     @Test
     public void deleteOne(){
     	//删除符合条件的一条文档对象
-    	DeleteResult deleteResult = collection.deleteOne(Filters.eq("i", 100));
+    	DeleteResult deleteResult = collection.deleteOne(eq("i", 100));
     	System.out.println(deleteResult.getDeletedCount());
     }
     @Test
     public void deleteMany(){
     	//删除符合条件的多条文档对象
-    	DeleteResult deleteResult = collection.deleteMany(Filters.gte("i", 100));//删除i大于等于100的值
+    	DeleteResult deleteResult = collection.deleteMany(gte("i", 100));//删除i大于等于100的值
     	System.out.println(deleteResult.getDeletedCount());
     }
     
+    @Test
+    public void getDodocumentField(){
+    	//按条件查询，显示指定的元素
+    	Block<Document> printBlock = new Block<Document>() {
+    	       public void apply(final Document document) {
+    	           System.out.println(document.toJson());
+    	       }
+    	};
+    	collection.find(eq("name","MongoDB"))
+    	.projection(fields(include("name", "count", "info"), excludeId()))//除开默认的ID
+    	.forEach(printBlock);;
+    	
+    }
+    
+    @Test
+    public void updateExistDocument(){
+    	//更新指定的元素，如果该元素没有，则会添加进去
+    	collection.updateOne(eq("i", 50), 
+    			combine(set("starts", 1),currentDate("lastModified")));
+    }
     
     
     
